@@ -33,3 +33,11 @@
 .Trashes
 ehthumbs.db
 Thumbs.db
+
+#Actual project
+*packages/
+*.vs*
+*/bin/*
+*/obj/*
+*_NCrunch*
+*.ncrunchproject
