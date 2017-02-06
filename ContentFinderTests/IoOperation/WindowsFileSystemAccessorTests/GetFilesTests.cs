@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using Castle.Core.Internal;
 using ContentFinder.IoOperation;
 using Xunit;
 
@@ -36,7 +35,10 @@ namespace ContentFinderTests.IoOperation.WindowsFileSystemAccessorTests
 
         private static void AllFilesShouldMatchPaths( IReadOnlyList<string> paths, IEnumerable<FileThinInfo> actualFiles )
         {
-            actualFiles.ForEach( f => Assert.Contains( f.Path, paths ) );
+            foreach (var file in actualFiles)
+            {
+                Assert.Contains(file.Path, paths);
+            }
         }
     }
 }

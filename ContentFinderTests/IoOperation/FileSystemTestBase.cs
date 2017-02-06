@@ -1,7 +1,6 @@
 using System;
 using System.IO;
 using System.Reflection;
-using Castle.Core.Internal;
 
 namespace ContentFinderTests.IoOperation
 {
@@ -27,7 +26,10 @@ namespace ContentFinderTests.IoOperation
         {
             var files = Directory.GetFiles( TestDirectory, "*.*", SearchOption.AllDirectories );
 
-            files.ForEach( File.Delete );
+            foreach (var file in files)
+            {
+                File.Delete(file);
+            }
             Directory.Delete( TestDirectory );
         }
 
@@ -39,7 +41,10 @@ namespace ContentFinderTests.IoOperation
                 GetFile( "png" ),
             };
 
-            paths.ForEach( CreateFile );
+            foreach (var path in paths)
+            {
+                CreateFile(path);
+            }
 
             return paths;
         }

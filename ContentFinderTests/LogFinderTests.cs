@@ -31,7 +31,7 @@ namespace ContentFinderTests
         {
             InvokeGetLogs();
 
-            _fsAccessorMock.Verify( f => f.GetFiles( LogsPath, FileExtension ) );
+            _fsAccessorMock.Verify( f => f.GetFiles( LogsPath, FileExtension, null ) );
         }
 
         [Fact]
@@ -112,7 +112,7 @@ namespace ContentFinderTests
         private string SetupLogAndGetItsPath()
         {
             var file = new FileThinInfo {Path = "C:\\Logs\\1.txt", Name = "1.txt"};
-            _fsAccessorMock.Setup( f => f.GetFiles( LogsPath, FileExtension ) ).Returns( new List<FileThinInfo> {file} );
+            _fsAccessorMock.Setup( f => f.GetFiles( LogsPath, FileExtension, null ) ).Returns( new List<FileThinInfo> {file} );
 
             return file.Path;
         }
@@ -137,7 +137,7 @@ namespace ContentFinderTests
                 new FileThinInfo {Path = "C:\\Logs\\2.txt"},
                 new FileThinInfo {Path = "C:\\Logs\\3.txt"}
             };
-            _fsAccessorMock.Setup( f => f.GetFiles( LogsPath, FileExtension ) ).Returns( files );
+            _fsAccessorMock.Setup( f => f.GetFiles( LogsPath, FileExtension, null ) ).Returns( files );
 
             return files.Select( f => f.Path ).ToArray();
         }

@@ -34,31 +34,46 @@ namespace ContentFinder
             string terminatorPattern = null,
             DateTime? searchFilesSince = null )
         {
-            var files = _fileSystemAccessor.GetFiles( path, _filesExtension ).ToArray();
-            var totalFiles = files.Length;
+            var files = _fileSystemAccessor.GetFiles(path, _filesExtension, searchFilesSince);
+            //var totalFiles = files.Length;
             var matches = 0;
 
-            for ( var currentFile = 0; currentFile < files.Length; currentFile++ )
+            foreach (var file in files)
             {
-                var file = files[currentFile];
-                if ( file.CreationTime < searchFilesSince )
-                {
-                    continue;
-                }
-                
-                var args = new FileProgressEventArgs(file, currentFile + 1, totalFiles, matches);
+                var args = new FileProgressEventArgs(file, 1, 1, matches);
                 OnFileReadingCompleted(args);
-                using ( var textReader = _fileSystemAccessor.OpenText( file.Path ) )
+                using (var textReader = _fileSystemAccessor.OpenText(file.Path))
                 {
-                    foreach ( var log in _contentReader.Read( textReader, matchPattern, terminatorPattern ) )
+                    foreach (var log in _contentReader.Read(textReader, matchPattern, terminatorPattern))
                     {
                         log.Source = file.Path;
                         matches++;
                         yield return log;
                     }
                 }
-
             }
+
+            //for ( var currentFile = 0; currentFile < files.Length; currentFile++ )
+            //{
+            //    var file = files[currentFile];
+            //    if ( file.CreationTime < searchFilesSince )
+            //    {
+            //        continue;
+            //    }
+            //    
+            //    var args = new FileProgressEventArgs(file, currentFile + 1, totalFiles, matches);
+            //    OnFileReadingCompleted(args);
+            //    using ( var textReader = _fileSystemAccessor.OpenText( file.Path ) )
+            //    {
+            //        foreach ( var log in _contentReader.Read( textReader, matchPattern, terminatorPattern ) )
+            //        {
+            //            log.Source = file.Path;
+            //            matches++;
+            //            yield return log;
+            //        }
+            //    }
+            //
+            //}
         }
 
         protected virtual void OnFileReadingCompleted( FileProgressEventArgs e )

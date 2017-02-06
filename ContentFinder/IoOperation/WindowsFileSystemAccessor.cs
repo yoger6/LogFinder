@@ -7,22 +7,28 @@ namespace ContentFinder.IoOperation
 {
     public class WindowsFileSystemAccessor : IFileSystemAccessor
     {
-        public IEnumerable<FileThinInfo> GetFiles( string path, string extension = "*" )
+        public IEnumerable<FileThinInfo> GetFiles(string path, string extension = "*", DateTime? since = null)
         {
-            return Directory.EnumerateFiles( path, $"*.{extension}", SearchOption.AllDirectories )
-                            .Select( ConvertToThinInfo );
+            var dir = new DirectoryInfo(path);
+            if (since.HasValue)
+            {
+                return dir.EnumerateFiles($"*.{extension}", SearchOption.AllDirectories)
+                    .OrderBy(f => f.LastWriteTime)
+                    .Where(f => f.LastWriteTime >= since.Value)
+                    .Select(ConvertToThinInfo);
+            }
+            return dir.EnumerateFiles($"*.{extension}", SearchOption.AllDirectories)
+                .Select(ConvertToThinInfo);
         }
 
-        private static FileThinInfo ConvertToThinInfo( string path )
+        private static FileThinInfo ConvertToThinInfo(FileInfo info)
         {
-            var fileInfo = new FileInfo( path );
-
-            return new FileThinInfo( fileInfo );
+            return new FileThinInfo(info);
         }
 
-        public StreamReader OpenText( string path )
+        public StreamReader OpenText(string path)
         {
-            return File.OpenText( path );
+            return File.OpenText(path);
         }
     }
 }
