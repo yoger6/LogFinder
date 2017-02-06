@@ -5,9 +5,9 @@ using ContentFinder.Logs;
 
 namespace ContentFinder.Reading
 {
-    public interface IContentReader
+    public interface IContentReader : IDisposable
     {
-        IEnumerable<Log> Read( StreamReader reader, string pattern, string terminator = null );
+        IEnumerable<Log> Read(string pattern, string terminator = null);
         event EventHandler<MatchingProgressEventArgs> FileReadingProgress;
     }
 }

@@ -2,19 +2,18 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using ContentFinder;
 using ContentFinder.Reading;
 using ContentFinder.Reading.DateParsing;
 using Moq;
 using Xunit;
 
-namespace ContentFinderTests.Reading
+namespace ContentFinderTests.Reading.ContentReaderTests
 {
-    public class ContentReaderTests
+    public class ReadTests
     {
         private readonly Mock<IDateTimeParser> _dateParserMock;
 
-        public ContentReaderTests()
+        public ReadTests()
         {
             _dateParserMock = new Mock<IDateTimeParser>();
         }
@@ -23,11 +22,11 @@ namespace ContentFinderTests.Reading
         public void ShouldReadAllLinesWithOccurencesOfExpectedText()
         {
             var expectedText = GetTextSeparatedByNewLines( "tricky", "tricky", "tricky" );
-            var reader = GetContentReader();
-
+            
             using ( var streamReader = GetStreamReaderWithContent( expectedText ) )
             {
-                var logs = reader.Read( streamReader, "tricky" );
+                var reader = GetContentReader(streamReader);
+                var logs = reader.Read("tricky" );
 
                 Assert.Equal( 3, logs.Count() );
             }
@@ -40,11 +39,12 @@ namespace ContentFinderTests.Reading
             const string terminator = "no more";
             var content = GetTextSeparatedByNewLines( pattern, "some more content", terminator );
             const string expectedMatchContent = "match\r\nsome more content\r\n";
-            var reader = GetContentReader();
+            
 
             using ( var streamReader = GetStreamReaderWithContent( content ) )
             {
-                var log = reader.Read( streamReader, pattern, terminator ).First();
+                var reader = GetContentReader(streamReader);
+                var log = reader.Read(pattern, terminator ).First();
 
                 Assert.Equal( expectedMatchContent, log.Content );
             }
@@ -57,11 +57,11 @@ namespace ContentFinderTests.Reading
             const string pattern = "Match";
 
             var content = GetTextSeparatedByNewLines( date, pattern );
-            var reader = GetContentReader();
-
+            
             using ( var streamReader = GetStreamReaderWithContent( content ) )
             {
-                reader.Read( streamReader, pattern ).ToArray();
+                var reader = GetContentReader(streamReader);
+                reader.Read(pattern ).ToArray();
             }
 
             _dateParserMock.Verify(
@@ -72,22 +72,22 @@ namespace ContentFinderTests.Reading
         public void ShouldReportReadingProgressAtBeginingOfFile_Aftereach10Lines_AndAtTheEnd()
         {
             var content = GetTextSeparatedByNewLines( "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10");
-            var reader = GetContentReader();
             var reportedProgress = new List<int>();
-            reader.FileReadingProgress += ( sender, args ) => reportedProgress.Add( args.Percent );
-
+            
             using ( var streamReader = GetStreamReaderWithContent( content ) )
             {
-                reader.Read( streamReader, "match" ).ToArray();
+                var reader = GetContentReader(streamReader);
+                reader.FileReadingProgress += (sender, args) => reportedProgress.Add(args.Percent);
+                reader.Read("match" ).ToArray();
             }
 
             Assert.Equal( 2, reportedProgress.Count );
             Assert.Equal( 100, reportedProgress.Last() );
         }
 
-        private ContentReader GetContentReader()
+        private ContentReader GetContentReader(StreamReader reader)
         {
-            return new ContentReader( _dateParserMock.Object, 2);
+            return new ContentReader( _dateParserMock.Object, reader, 2);
         }
 
         private static StreamReader GetStreamReaderWithContent( string expectedText )

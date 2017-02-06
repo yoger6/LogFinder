@@ -9,7 +9,7 @@ namespace ContentFinder
         private const string Extension = "pslog";
 
         public PowershellLogFinder()
-            : base( Extension, new ContentReader( new PowershellLogDateTimeParser(), 3 ), new WindowsFileSystemAccessor() )
+            : base( Extension, new ContentReader( new PowershellLogDateTimeParser(),null, 3), new WindowsFileSystemAccessor() )
         {
         }
     }

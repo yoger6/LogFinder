@@ -101,7 +101,7 @@ namespace ContentFinderTests
 
         private void VerifyThatReaderWasUsedToFindLogs( StreamReader textReader )
         {
-            _readerMock.Verify( r => r.Read( textReader, SearchPattern, null ) );
+            _readerMock.Verify( r => r.Read(SearchPattern, null ) );
         }
 
         private void AssignReaderToPath( string path, StreamReader textReader )

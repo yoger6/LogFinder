@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text.RegularExpressions;
+using System.Timers;
 using ContentFinder.Collections;
 using ContentFinder.Logs;
 using ContentFinder.Reading.DateParsing;
@@ -12,17 +13,22 @@ namespace ContentFinder.Reading
     public class ContentReader : IContentReader
     {
         private readonly IDateTimeParser _dateParser;
+        private readonly StreamReader _streamReader;
+        private readonly StreamReaderProgressObserver _progressObserver;
         private readonly int _bufferSize;
+        private int _matches;
 
         public event EventHandler<MatchingProgressEventArgs> FileReadingProgress;
 
-        public ContentReader( IDateTimeParser dateParser, int bufferSize = 1 )
+        public ContentReader(IDateTimeParser dateParser, StreamReader streamReader, int bufferSize = 1)
         {
             _dateParser = dateParser;
+            _streamReader = streamReader;
             _bufferSize = bufferSize;
+            _progressObserver = new StreamReaderProgressObserver(_streamReader);
         }
 
-        public IEnumerable<Log> Read( StreamReader reader, string pattern, string terminator = null )
+        public IEnumerable<Log> Read(string pattern, string terminator = null)
         {
             if ( terminator == null )
             {
@@ -31,21 +37,16 @@ namespace ContentFinder.Reading
 
             using ( var progressNotifier = new Timer( 300 ) )
             {
-                var progressObserver = new StreamReaderProgressObserver( reader );
                 var buffer = new LimitedQueue<string>( _bufferSize );
                 var shouldTerminate = false;
                 var lineNumber = 0;
-                int[] matches = {0};
-                progressNotifier.Elapsed += ( sender, args ) =>
-                {
-                    OnFileReadingProgress( progressObserver.Observe(), matches[0] );
-                };
+                progressNotifier.Elapsed += NotifyAboutProgress;
                 progressNotifier.Start();
                 LogBuilder builder = null;
 
-                while ( reader.Peek() > 0 )
+                while ( _streamReader.Peek() > 0 )
                 {
-                    var currentLine = reader.ReadLine();
+                    var currentLine = _streamReader.ReadLine();
                     buffer.Enqueue( currentLine );
                     lineNumber++;
 
@@ -64,22 +65,27 @@ namespace ContentFinder.Reading
 
                     if ( IsMatch( currentLine, pattern ) && !shouldTerminate )
                     {
-                        matches[0]++;
+                        _matches++;
                         builder = new LogBuilder( buffer, _dateParser, lineNumber );
                         shouldTerminate = true;
-                        if ( reader.Peek() < 1 )
+                        if (_streamReader.Peek() < 1 )
                         {
                             yield return builder.Build();
                         }
                     }
                 
-                    if (lineNumber == 1 || reader.EndOfStream )
+                    if (lineNumber == 1 || _streamReader.EndOfStream )
                     {
-                        OnFileReadingProgress(progressObserver.Observe(), matches[0]);
+                        OnFileReadingProgress(_progressObserver.Observe(), _matches);
                     }
                 }
                 progressNotifier.Stop();
             }
+        }
+
+        private void NotifyAboutProgress(object sender, ElapsedEventArgs elapsedEventArgs)
+        {
+            OnFileReadingProgress(_progressObserver.Observe(), _matches);
         }
 
         private static bool IsTerminator( string line, string pattern )
@@ -102,6 +108,11 @@ namespace ContentFinder.Reading
         protected virtual void OnFileReadingProgress( int percent, int matches )
         {
             FileReadingProgress?.Invoke( this, new MatchingProgressEventArgs(percent,matches));
+        }
+
+        public void Dispose()
+        {
+            _streamReader.Dispose();
         }
     }
 }

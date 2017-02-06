@@ -34,6 +34,7 @@
     <Reference Include="System.Core" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="ContentReaderFactory.cs" />
     <Compile Include="IoOperation\FileInfoCollectionExtensions.cs" />
     <Compile Include="IoOperation\FileThinInfo.cs" />
     <Compile Include="IoOperation\IFileSystemAccessor.cs" />

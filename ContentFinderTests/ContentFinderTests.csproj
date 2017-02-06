@@ -71,6 +71,7 @@
     <Otherwise />
   </Choose>
   <ItemGroup>
+    <Compile Include="ContentReaderFactoryTests.cs" />
     <Compile Include="IoOperation\FileInfoCollectionExtensionsTests.cs" />
     <Compile Include="IoOperation\FileSystemTestBase.cs" />
     <Compile Include="IoOperation\WindowsFileSystemAccessorTests\GetFilesTests.cs" />
@@ -83,7 +84,8 @@
     </Compile>
     <Compile Include="PowershellLogFinderTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Reading\ContentReaderTests.cs" />
+    <Compile Include="Reading\ContentReaderTests\ContentReaderTest.cs" />
+    <Compile Include="Reading\ContentReaderTests\ReadTests.cs" />
     <Compile Include="Reading\LimitedQueueTests.cs" />
     <Compile Include="Reading\PowershellLogDateTimeParserTests.cs" />
     <Compile Include="Reading\StreamReaderProgressObserverTests.cs" />

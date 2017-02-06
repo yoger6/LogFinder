@@ -46,7 +46,7 @@ namespace ContentFinder
                 OnFileReadingCompleted(args);
                 using ( var textReader = _fileSystemAccessor.OpenText( file.Path ) )
                 {
-                    foreach ( var log in _contentReader.Read( textReader, matchPattern, terminatorPattern ) )
+                    foreach ( var log in _contentReader.Read(matchPattern, terminatorPattern ) )
                     {
                         log.Source = file.Path;
                         matches++;
