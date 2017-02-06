@@ -33,6 +33,13 @@ namespace ContentFinderTests.IoOperation
             Directory.Delete( TestDirectory );
         }
 
+        protected string CreateFileAndGetPath()
+        {
+            var path = GetFile("txt");
+            CreateFile(path);
+            return path;
+        }
+
         protected string[] CreateFilesAndGetPaths()
         {
             var paths = new[]

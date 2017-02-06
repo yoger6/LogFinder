@@ -10,8 +10,8 @@ namespace ContentFinder
     public class LogFinder
     {
         private readonly IContentReader _contentReader;
-        private readonly string _filesExtension;
         private readonly IFileSystemAccessor _fileSystemAccessor;
+        private readonly string _filesExtension;
         protected readonly DateTime DefaultDate;
 
         public event EventHandler<FileProgressEventArgs> FileQueueProgress;
@@ -34,46 +34,27 @@ namespace ContentFinder
             string terminatorPattern = null,
             DateTime? searchFilesSince = null )
         {
-            var files = _fileSystemAccessor.GetFiles(path, _filesExtension, searchFilesSince);
-            //var totalFiles = files.Length;
+            var files = _fileSystemAccessor.GetFiles(path, _filesExtension, searchFilesSince).ToArray();
+            var totalFiles = files.Length;
             var matches = 0;
-
-            foreach (var file in files)
+            
+            for ( var currentFile = 0; currentFile < files.Length; currentFile++ )
             {
-                var args = new FileProgressEventArgs(file, 1, 1, matches);
+                var file = files[currentFile];
+                
+                var args = new FileProgressEventArgs(file, currentFile + 1, totalFiles, matches);
                 OnFileReadingCompleted(args);
-                using (var textReader = _fileSystemAccessor.OpenText(file.Path))
+                using ( var textReader = _fileSystemAccessor.OpenText( file.Path ) )
                 {
-                    foreach (var log in _contentReader.Read(textReader, matchPattern, terminatorPattern))
+                    foreach ( var log in _contentReader.Read( textReader, matchPattern, terminatorPattern ) )
                     {
                         log.Source = file.Path;
                         matches++;
                         yield return log;
                     }
                 }
+            
             }
-
-            //for ( var currentFile = 0; currentFile < files.Length; currentFile++ )
-            //{
-            //    var file = files[currentFile];
-            //    if ( file.CreationTime < searchFilesSince )
-            //    {
-            //        continue;
-            //    }
-            //    
-            //    var args = new FileProgressEventArgs(file, currentFile + 1, totalFiles, matches);
-            //    OnFileReadingCompleted(args);
-            //    using ( var textReader = _fileSystemAccessor.OpenText( file.Path ) )
-            //    {
-            //        foreach ( var log in _contentReader.Read( textReader, matchPattern, terminatorPattern ) )
-            //        {
-            //            log.Source = file.Path;
-            //            matches++;
-            //            yield return log;
-            //        }
-            //    }
-            //
-            //}
         }
 
         protected virtual void OnFileReadingCompleted( FileProgressEventArgs e )
