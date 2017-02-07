@@ -13,10 +13,10 @@ namespace ContentFinder.Reading
 
         private static IEnumerable<string> ReadExceptions( string content )
         {
-            const string pattern = "([^\\s\\.]*Exception)(?![a-z])";
+            const string exceptionPattern = "([^\\s\\.]*Exception)(?![a-z])";
 
-            var matches = Regex.Matches( content, pattern );
-
+            var matches = Regex.Matches( content, exceptionPattern );
+            
             foreach ( Match match in matches )
             {
                 yield return match.Value;

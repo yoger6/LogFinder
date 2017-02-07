@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using ContentFinder.IoOperation;
@@ -9,62 +10,75 @@ namespace ContentFinder
 {
     public class LogFinder
     {
-        private readonly IContentReader _contentReader;
+        private readonly IContentReaderFactory _contentReaderFactory;
         private readonly IFileSystemAccessor _fileSystemAccessor;
         private readonly string _filesExtension;
         protected readonly DateTime DefaultDate;
+        private ConcurrentBag<Log> _logs;
+        private readonly string _matchPattern;
+        private readonly string _terminatorPattern;
+        private int _filesRead;
+        private int _totalFiles;
+        public int ReadThreads = 1;
 
         public event EventHandler<FileProgressEventArgs> FileQueueProgress;
-        public event EventHandler<MatchingProgressEventArgs> FileReadingProgress; 
+        public event EventHandler<MatchingProgressEventArgs> FileReadingProgress;
 
-        public LogFinder( string filesExtension, IContentReader contentReader, IFileSystemAccessor fileSystemAccessor )
+        public LogFinder(
+            string filesExtension,
+            string matchPattern,
+            string terminatorPattern,
+            IContentReaderFactory contentReaderFactory,
+            IFileSystemAccessor fileSystemAccessor )
         {
             _filesExtension = filesExtension;
-            _contentReader = contentReader;
+            _contentReaderFactory = contentReaderFactory;
             _fileSystemAccessor = fileSystemAccessor;
-
-            _contentReader.FileReadingProgress += ( sender, i ) => OnFileReadingProgress( i );
+            _matchPattern = matchPattern;
+            _terminatorPattern = terminatorPattern;
             DefaultDate = DateTime.Today;
         }
-        
-        //progress and errors 
-        public virtual IEnumerable<Log> GetLogs( 
-            string path, 
-            string matchPattern, 
-            string terminatorPattern = null,
+
+        public virtual IEnumerable<Log> GetLogs(
+            string path,
             DateTime? searchFilesSince = null )
         {
-            var files = _fileSystemAccessor.GetFiles(path, _filesExtension, searchFilesSince).ToArray();
-            var totalFiles = files.Length;
-            var matches = 0;
-            
-            for ( var currentFile = 0; currentFile < files.Length; currentFile++ )
+            var files = _fileSystemAccessor.GetFiles( path, _filesExtension, searchFilesSince ).ToArray();
+            _totalFiles = files.Length;
+            _logs = new ConcurrentBag<Log>();
+
+            files.AsParallel().WithDegreeOfParallelism( ReadThreads ).ForAll( ReadLogs );
+           
+            return _logs;
+        }
+
+        private void ReadLogs( FileThinInfo file )
+        {
+            using ( var textReader = _fileSystemAccessor.OpenText( file.Path ) )
             {
-                var file = files[currentFile];
-                
-                var args = new FileProgressEventArgs(file, currentFile + 1, totalFiles, matches);
-                OnFileReadingCompleted(args);
-                using ( var textReader = _fileSystemAccessor.OpenText( file.Path ) )
+                using ( var contentReader = _contentReaderFactory.Create( textReader ) )
                 {
-                    foreach ( var log in _contentReader.Read(matchPattern, terminatorPattern ) )
+                    contentReader.FileReadingProgress += OnFileReadingProgress;
+
+                    foreach ( var log in contentReader.Read( _matchPattern, _terminatorPattern ) )
                     {
                         log.Source = file.Path;
-                        matches++;
-                        yield return log;
+                        _logs.Add( log );
                     }
+                    var args = new FileProgressEventArgs(file, ++_filesRead, _totalFiles, _logs.Count);
+                    OnFileReadingCompleted(args);
                 }
-            
             }
+        }
+
+        private void OnFileReadingProgress( object sender, MatchingProgressEventArgs args )
+        {
+            FileReadingProgress?.Invoke(this, args);
         }
 
         protected virtual void OnFileReadingCompleted( FileProgressEventArgs e )
         {
             FileQueueProgress?.Invoke( this, e );
-        }
-
-        protected virtual void OnFileReadingProgress( MatchingProgressEventArgs e )
-        {
-            FileReadingProgress?.Invoke( this, e );
         }
     }
 }

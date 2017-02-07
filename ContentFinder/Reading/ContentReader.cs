@@ -5,7 +5,6 @@ using System.Text.RegularExpressions;
 using System.Timers;
 using ContentFinder.Collections;
 using ContentFinder.Logs;
-using ContentFinder.Reading.DateParsing;
 using Timer = System.Timers.Timer;
 
 namespace ContentFinder.Reading
@@ -15,40 +14,41 @@ namespace ContentFinder.Reading
         private readonly IDateTimeParser _dateParser;
         private readonly StreamReader _streamReader;
         private readonly StreamReaderProgressObserver _progressObserver;
-        private readonly int _bufferSize;
+        private readonly LimitedQueue<string> _buffer;
         private int _matches;
+        private int _lineNumber;
+        private const int ProgressReportInterval = 300;
 
         public event EventHandler<MatchingProgressEventArgs> FileReadingProgress;
 
-        public ContentReader(IDateTimeParser dateParser, StreamReader streamReader, int bufferSize = 1)
+        public ContentReader( IDateTimeParser dateParser, StreamReader streamReader, int bufferSize = 1 )
         {
             _dateParser = dateParser;
             _streamReader = streamReader;
-            _bufferSize = bufferSize;
-            _progressObserver = new StreamReaderProgressObserver(_streamReader);
+            _buffer = new LimitedQueue<string>( bufferSize );
+            _progressObserver = new StreamReaderProgressObserver( _streamReader );
         }
 
-        public IEnumerable<Log> Read(string pattern, string terminator = null)
+        public IEnumerable<Log> Read( string pattern, string terminator = null )
         {
             if ( terminator == null )
             {
                 terminator = pattern;
             }
 
-            using ( var progressNotifier = new Timer( 300 ) )
+            using ( var progressNotifier = new Timer( ProgressReportInterval ) )
             {
-                var buffer = new LimitedQueue<string>( _bufferSize );
-                var shouldTerminate = false;
-                var lineNumber = 0;
                 progressNotifier.Elapsed += NotifyAboutProgress;
                 progressNotifier.Start();
+
+                var shouldTerminate = false;
                 LogBuilder builder = null;
 
                 while ( _streamReader.Peek() > 0 )
                 {
                     var currentLine = _streamReader.ReadLine();
-                    buffer.Enqueue( currentLine );
-                    lineNumber++;
+                    _buffer.Enqueue( currentLine );
+                    _lineNumber++;
 
                     if ( shouldTerminate )
                     {
@@ -66,26 +66,36 @@ namespace ContentFinder.Reading
                     if ( IsMatch( currentLine, pattern ) && !shouldTerminate )
                     {
                         _matches++;
-                        builder = new LogBuilder( buffer, _dateParser, lineNumber );
+                        builder = new LogBuilder( _buffer, _dateParser, _lineNumber );
                         shouldTerminate = true;
-                        if (_streamReader.Peek() < 1 )
+                        if ( _streamReader.Peek() < 1 )
                         {
                             yield return builder.Build();
                         }
                     }
-                
-                    if (lineNumber == 1 || _streamReader.EndOfStream )
+
+                    if ( IsStartOrEndOfFile() )
                     {
-                        OnFileReadingProgress(_progressObserver.Observe(), _matches);
+                        ReportProgress();
                     }
                 }
                 progressNotifier.Stop();
             }
         }
 
-        private void NotifyAboutProgress(object sender, ElapsedEventArgs elapsedEventArgs)
+        private void ReportProgress()
         {
-            OnFileReadingProgress(_progressObserver.Observe(), _matches);
+            OnFileReadingProgress( _progressObserver.Observe(), _matches );
+        }
+
+        private bool IsStartOrEndOfFile()
+        {
+            return _lineNumber == 1 || _streamReader.EndOfStream;
+        }
+
+        private void NotifyAboutProgress( object sender, ElapsedEventArgs elapsedEventArgs )
+        {
+            OnFileReadingProgress( _progressObserver.Observe(), _matches );
         }
 
         private static bool IsTerminator( string line, string pattern )
@@ -93,21 +103,21 @@ namespace ContentFinder.Reading
             return IsMatchSuccess( line, pattern );
         }
 
-        private static bool IsMatch( string line, string pattern)
+        private static bool IsMatch( string line, string pattern )
         {
             return IsMatchSuccess( line, pattern );
         }
 
         private static bool IsMatchSuccess( string line, string pattern )
         {
-            var match = Regex.Match(line, pattern);
+            var match = Regex.Match( line, pattern );
 
             return match.Success;
         }
 
         protected virtual void OnFileReadingProgress( int percent, int matches )
         {
-            FileReadingProgress?.Invoke( this, new MatchingProgressEventArgs(percent,matches));
+            FileReadingProgress?.Invoke( this, new MatchingProgressEventArgs( percent, matches ) );
         }
 
         public void Dispose()

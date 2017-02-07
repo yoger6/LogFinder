@@ -1,6 +1,5 @@
 using System.IO;
 using ContentFinder.Reading;
-using ContentFinder.Reading.DateParsing;
 using Moq;
 using Xunit;
 

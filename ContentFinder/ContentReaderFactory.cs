@@ -1,29 +1,28 @@
 ﻿using System;
 using System.IO;
 using ContentFinder.Reading;
-using ContentFinder.Reading.DateParsing;
 
 namespace ContentFinder
 {
-    public class ContentReaderFactory 
+    public class ContentReaderFactory : IContentReaderFactory
     {
         private readonly IDateTimeParser _timeParser;
         private readonly int _lineBuffer;
 
-        public ContentReaderFactory(IDateTimeParser timeParser, int lineBuffer)
+        public ContentReaderFactory( IDateTimeParser timeParser, int lineBuffer )
         {
             _timeParser = timeParser;
             _lineBuffer = lineBuffer;
         }
 
-        public IContentReader Create(StreamReader streamReader)
+        public IContentReader Create( StreamReader streamReader )
         {
-            if (streamReader == null)
+            if ( streamReader == null )
             {
-                throw new ArgumentNullException(nameof(streamReader));
+                throw new ArgumentNullException( nameof( streamReader ) );
             }
 
-            return new ContentReader(_timeParser, streamReader, _lineBuffer);
+            return new ContentReader( _timeParser, streamReader, _lineBuffer );
         }
     }
 }

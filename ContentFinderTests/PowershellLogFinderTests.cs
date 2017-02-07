@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using ContentFinder;
 using ContentFinder.Logs;
-using ContentFinder.Reading;
+using ContentFinder.PowerShell;
 using ContentFinderTests.IoOperation;
 using Xunit;
 
@@ -15,17 +15,17 @@ namespace ContentFinderTests
         public void ShouldReturnExpectedLogsFromFile()
         {
             CreateFileWithLogs();
-            var finder = new PowershellLogFinder();
+            var finder = new PowershellLogFinder( "git", "\\*{22}" );
 
-            var logs = finder.GetLogs( TestDirectory, "git", "\\*{22}");
+            var logs = finder.GetLogs( TestDirectory );
 
             ValidateLogs( logs.ToArray() );
         }
 
         private static void ValidateLogs( IReadOnlyList<Log> logs )
         {
-            ValidateLog( logs[0], new DateTime( 2017, 01, 21, 08, 27, 11 ), FirstLogContent() );
-            ValidateLog( logs[1], new DateTime( 2017, 01, 21, 08, 27, 15 ), SecondLineContent() );
+            ValidateLog( logs[1], new DateTime( 2017, 01, 21, 08, 27, 11 ), FirstLogContent() );
+            ValidateLog( logs[0], new DateTime( 2017, 01, 21, 08, 27, 15 ), SecondLineContent() );
         }
 
         private static void ValidateLog( Log log, DateTime expectedDate, string expectedContent )
@@ -46,7 +46,7 @@ namespace ContentFinderTests
 
         private void CreateFileWithLogs()
         {
-            CreateFileAndGetItsPath(LogFinderTestResources.PowershellLogContent, "pslog" );
+            CreateFileAndGetItsPath( LogFinderTestResources.PowershellLogContent, "pslog" );
         }
     }
 }

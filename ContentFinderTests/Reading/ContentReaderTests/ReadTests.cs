@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using ContentFinder.Reading;
-using ContentFinder.Reading.DateParsing;
 using Moq;
 using Xunit;
 

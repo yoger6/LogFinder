@@ -1,6 +1,6 @@
 using System;
+using ContentFinder.PowerShell;
 using ContentFinder.Reading;
-using ContentFinder.Reading.DateParsing;
 using Xunit;
 
 namespace ContentFinderTests.Reading

@@ -2,8 +2,10 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 using ContentFinder;
 using ContentFinder.IoOperation;
+using ContentFinder.Logs;
 using ContentFinder.Reading;
 using Moq;
 using Xunit;
@@ -17,13 +19,16 @@ namespace ContentFinderTests
         private const string SearchPattern = "abc";
         private readonly Mock<IFileSystemAccessor> _fsAccessorMock;
         private readonly Mock<IContentReader> _readerMock;
+        private readonly Mock<IContentReaderFactory> _readerFactoryMock;
         private readonly LogFinder _finder;
 
         public LogFinderTests()
         {
             _fsAccessorMock = new Mock<IFileSystemAccessor>();
             _readerMock = new Mock<IContentReader>();
-            _finder = new LogFinder( FileExtension, _readerMock.Object, _fsAccessorMock.Object );
+            _readerFactoryMock = new Mock<IContentReaderFactory>();
+            _readerFactoryMock.Setup( r => r.Create( It.IsAny<StreamReader>() ) ).Returns( _readerMock.Object );
+            _finder = new LogFinder( FileExtension, SearchPattern, SearchPattern, _readerFactoryMock.Object, _fsAccessorMock.Object );
         }
 
         [Fact]
@@ -39,7 +44,7 @@ namespace ContentFinderTests
         {
             var path = SetupLogAndGetItsPath();
 
-            var logs = _finder.GetLogs( LogsPath, SearchPattern, SearchPattern, DateTime.Now.AddMinutes( 1 ) ).ToArray();
+            _finder.GetLogs( LogsPath, DateTime.Now.AddMinutes( 1 ) );
 
             _fsAccessorMock.Verify( f => f.OpenText( path ), Times.Never );
         }
@@ -86,22 +91,32 @@ namespace ContentFinderTests
         public void ShouldReportFileProgress_WhenReaderReportsIt()
         {
             SetupLogAndGetItsPath();
-            var reported = 0;
-            _finder.FileReadingProgress += ( sender, args ) => reported = args.Percent;
+            var expected = new MatchingProgressEventArgs(10, 1);
+            MatchingProgressEventArgs actual = null;
+            _finder.FileReadingProgress += ( sender, args ) => actual = args;
+            SetupReaderToRaiseProgressWhenRead( expected );
+            
+            InvokeGetLogs();
+        
+            Assert.Equal( expected, actual );
+        }
 
-            _readerMock.Raise( r=>r.FileReadingProgress += null, this, new MatchingProgressEventArgs (10, 1) );
-
-            Assert.Equal( 10, reported );
+        private void SetupReaderToRaiseProgressWhenRead( MatchingProgressEventArgs expected )
+        {
+            _readerMock.Setup( r => r.Read( SearchPattern, SearchPattern ) )
+                .Returns( new List<Log>( 0 ) )
+                .Raises( r => r.FileReadingProgress += null, this, expected );
         }
 
         private void InvokeGetLogs()
         {
-            _finder.GetLogs( LogsPath, SearchPattern ).ToArray();
+            _finder.GetLogs( LogsPath ).ToArray();
         }
 
         private void VerifyThatReaderWasUsedToFindLogs( StreamReader textReader )
         {
-            _readerMock.Verify( r => r.Read(SearchPattern, null ) );
+            _readerFactoryMock.Verify(r=>r.Create( textReader ), Times.Once);
+            _readerMock.Verify( r => r.Read(SearchPattern, SearchPattern ) );
         }
 
         private void AssignReaderToPath( string path, StreamReader textReader )
@@ -113,7 +128,7 @@ namespace ContentFinderTests
         {
             var file = new FileThinInfo {Path = "C:\\Logs\\1.txt", Name = "1.txt"};
             _fsAccessorMock.Setup( f => f.GetFiles( LogsPath, FileExtension, null ) ).Returns( new List<FileThinInfo> {file} );
-
+            _fsAccessorMock.Setup( f => f.OpenText( file.Path ) ).Returns( new StreamReader( Stream.Null ) );
             return file.Path;
         }
 

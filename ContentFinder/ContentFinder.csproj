@@ -35,22 +35,23 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="ContentReaderFactory.cs" />
-    <Compile Include="IoOperation\FileInfoCollectionExtensions.cs" />
+    <Compile Include="IContentReaderFactory.cs" />
     <Compile Include="IoOperation\FileThinInfo.cs" />
     <Compile Include="IoOperation\IFileSystemAccessor.cs" />
     <Compile Include="IoOperation\WindowsFileSystemAccessor.cs" />
     <Compile Include="LogFinder.cs" />
     <Compile Include="Logs\Log.cs" />
-    <Compile Include="PowershellLogFinder.cs" />
+    <Compile Include="PowerShell\PowershellContentReaderFactory.cs" />
+    <Compile Include="PowerShell\PowershellLogDateTimeParser.cs" />
+    <Compile Include="PowerShell\PowershellLogFinder.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Reading\ContentReader.cs" />
+    <Compile Include="Reading\IDateTimeParser.cs" />
     <Compile Include="Reading\MatchingProgressEventArgs.cs" />
     <Compile Include="Reading\IContentReader.cs" />
-    <Compile Include="Reading\DateParsing\IDateTimeParser.cs" />
     <Compile Include="Collections\IQueue.cs" />
     <Compile Include="Collections\LimitedQueue.cs" />
     <Compile Include="Logs\LogBuilder.cs" />
-    <Compile Include="Reading\DateParsing\PowershellLogDateTimeParser.cs" />
     <Compile Include="Reading\ContentParsingExtensions.cs" />
     <Compile Include="Reading\StreamReaderProgressObserver.cs" />
     <Compile Include="Reading\FileProgressEventArgs.cs" />

@@ -1,14 +1,18 @@
 using System;
 using System.Globalization;
 using System.Text.RegularExpressions;
+using ContentFinder.Reading;
 
-namespace ContentFinder.Reading.DateParsing
+namespace ContentFinder.PowerShell
 {
     internal class PowershellLogDateTimeParser : IDateTimeParser
     {
         public DateTime? TryParse( string[] lines )
         {
-            if ( string.IsNullOrWhiteSpace( lines[0] ) ) return null;
+            if ( string.IsNullOrWhiteSpace( lines[0] ) )
+            {
+                return null;
+            }
 
             return ReadTime( lines[0] );
         }
@@ -28,7 +32,7 @@ namespace ContentFinder.Reading.DateParsing
             {
                 return DateTime.ParseExact( datePart, dateFormat, CultureInfo.InvariantCulture );
             }
-            catch ( Exception )
+            catch (FormatException)
             {
                 return null;
             }

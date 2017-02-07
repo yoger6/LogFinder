@@ -1,3 +1,4 @@
+using System;
 using System.IO;
 using System.Reflection;
 
@@ -14,29 +15,34 @@ namespace ContentFinder.Reading
 
         public int Observe()
         {
-            return GetReadingProgress(_reader);
+            return GetReadingProgress( _reader );
         }
 
-        private static int GetReadingProgress(StreamReader reader)
+        private static int GetReadingProgress( StreamReader reader )
         {
-            return (int)(GetCurrentPosition( reader ) / (double)reader.BaseStream.Length*100);
+            return (int) ( GetCurrentPosition( reader )/(double) reader.BaseStream.Length*100 );
         }
 
         private static long GetCurrentPosition( StreamReader reader )
         {
-            var type = reader.GetType();
-            var charPos = (int)type.InvokeMember("charPos",
-                BindingFlags.DeclaredOnly |
-                BindingFlags.Public | BindingFlags.NonPublic |
-                BindingFlags.Instance | BindingFlags.GetField
-                , null, reader, null);
-            var charlen = (int)type.InvokeMember("charLen",
-                BindingFlags.DeclaredOnly |
-                BindingFlags.Public | BindingFlags.NonPublic |
-                BindingFlags.Instance | BindingFlags.GetField
-                , null, reader, null);
+            if ( reader.BaseStream == null ) return 0;
 
-            return reader.BaseStream.Position - charlen + charPos;
+            var type = reader.GetType();
+            var charPosition = GetMember( "charPos", reader, type );
+            var charLength = GetMember( "charLen", reader, type );
+
+            return reader.BaseStream.Position - charLength + charPosition;
         }
+
+        private static int GetMember( string name, StreamReader reader, Type type )
+        {
+            return (int) type.InvokeMember( name, Flags, null, reader, null );
+        }
+
+        private static BindingFlags Flags => BindingFlags.DeclaredOnly |
+                                             BindingFlags.Public |
+                                             BindingFlags.NonPublic |
+                                             BindingFlags.Instance |
+                                             BindingFlags.GetField;
     }
 }

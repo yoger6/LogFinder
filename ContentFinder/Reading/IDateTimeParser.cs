@@ -1,6 +1,6 @@
 using System;
 
-namespace ContentFinder.Reading.DateParsing
+namespace ContentFinder.Reading
 {
     public interface IDateTimeParser
     {
