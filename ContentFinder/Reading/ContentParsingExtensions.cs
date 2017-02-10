@@ -6,6 +6,8 @@ namespace ContentFinder.Reading
 {
     public static class ContentParsingExtensions
     {
+        private static readonly string[] BannedNames = {"ThrowException", "OnException"};
+
         public static string[] GetExceptions( this string content )
         {
             return ReadExceptions( content ).ToArray();
@@ -13,14 +15,16 @@ namespace ContentFinder.Reading
 
         private static IEnumerable<string> ReadExceptions( string content )
         {
-            const string exceptionPattern = "([^\\s\\.]*Exception)(?![a-z])";
+            const string exceptionPattern = "((?![a-z])[^\\s\\.(]*Exception)(?![a-z])";
 
             var matches = Regex.Matches( content, exceptionPattern );
-            
-            foreach ( Match match in matches )
-            {
-                yield return match.Value;
-            }
+
+            return matches.Cast<Match>().Select(m => m.Value).Distinct().Where(IsNotBanned);
+        }
+
+        private static bool IsNotBanned(string name)
+        {
+            return !BannedNames.Contains(name);
         }
     }
 }

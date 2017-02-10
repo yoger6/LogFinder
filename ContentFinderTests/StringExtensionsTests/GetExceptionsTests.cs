@@ -44,8 +44,8 @@ namespace ContentFinderTests.StringExtensionsTests
 
             var exceptions = content.GetExceptions();
 
+            Assert.Equal(1, exceptions.Length);
             Assert.Contains( "InvalidOperationException", exceptions );
-            Assert.Equal( 1, exceptions.Length );
         }
 
         [Fact]
@@ -55,8 +55,8 @@ namespace ContentFinderTests.StringExtensionsTests
 
             var exceptions = content.GetExceptions();
 
+            Assert.Equal(1, exceptions.Length);
             Assert.Contains( content, exceptions );
-            Assert.Equal( 1, exceptions.Length );
         }
 
         [Fact]
@@ -66,7 +66,60 @@ namespace ContentFinderTests.StringExtensionsTests
 
             var exceptions = content.GetExceptions();
 
+            Assert.Equal(1, exceptions.Length);
             Assert.Contains( "Exception", exceptions );
+        }
+
+        [Fact]
+        public void ShouldNotReturnExceptionsThatStartWithLowercase()
+        {
+            const string content = "someException";
+
+            var exceptions = content.GetExceptions();
+
+            Assert.Equal(1, exceptions.Length);
+            Assert.Contains("Exception", exceptions);
+        }
+
+        [Fact]
+        public void ShouldNotIncludeInvalidCharactersWithinExceptionName()
+        {
+            const string content = "Invalid(Exception";
+
+            var exceptions = content.GetExceptions();
+
+            Assert.Equal(1, exceptions.Length);
+            Assert.Contains("Exception", exceptions);
+        }
+
+        [Fact]
+        public void ShouldReturnOnlyUniqueExceptions()
+        {
+            const string content = "Exception blah and one more Exception";
+
+            var exceptions = content.GetExceptions();
+
+            Assert.Equal(1, exceptions.Length);
+        }
+
+        [Fact]
+        public void ShouldNotConsiderExceptionsThatAreFollowedByOtherLowerCaseCharacters()
+        {
+            const string content = "Exceptions";
+
+            var exceptions = content.GetExceptions();
+
+            Assert.Empty(exceptions);
+        }
+
+        [Theory]
+        [InlineData("ThrowException")]
+        [InlineData("OnException")]
+        public void ShouldNotContainFixedContentThatIsNotAnActualException(string content)
+        {
+            var exceptions = content.GetExceptions();
+
+            Assert.Empty(exceptions);
         }
     }
 }

@@ -17,23 +17,24 @@ namespace ContentFinder
         private ConcurrentBag<Log> _logs;
         private readonly string _matchPattern;
         private readonly string _terminatorPattern;
+        private readonly int _readThreads;
         private int _filesRead;
         private int _totalFiles;
-        public int ReadThreads = 1;
 
         public event EventHandler<FileProgressEventArgs> FileQueueProgress;
         public event EventHandler<MatchingProgressEventArgs> FileReadingProgress;
 
-        public LogFinder(
-            string filesExtension,
-            string matchPattern,
-            string terminatorPattern,
-            IContentReaderFactory contentReaderFactory,
-            IFileSystemAccessor fileSystemAccessor )
+        public LogFinder(string filesExtension, 
+                         string matchPattern, 
+                         string terminatorPattern,
+                         IContentReaderFactory contentReaderFactory, 
+                         IFileSystemAccessor fileSystemAccessor, 
+                         int readThreads = 1)
         {
             _filesExtension = filesExtension;
             _contentReaderFactory = contentReaderFactory;
             _fileSystemAccessor = fileSystemAccessor;
+            _readThreads = readThreads;
             _matchPattern = matchPattern;
             _terminatorPattern = terminatorPattern;
             DefaultDate = DateTime.Today;
@@ -41,29 +42,29 @@ namespace ContentFinder
 
         public virtual IEnumerable<Log> GetLogs(
             string path,
-            DateTime? searchFilesSince = null )
+            DateTime? searchFilesSince = null)
         {
-            var files = _fileSystemAccessor.GetFiles( path, _filesExtension, searchFilesSince ).ToArray();
+            var files = _fileSystemAccessor.GetFiles(path, _filesExtension, searchFilesSince).ToArray();
             _totalFiles = files.Length;
             _logs = new ConcurrentBag<Log>();
 
-            files.AsParallel().WithDegreeOfParallelism( ReadThreads ).ForAll( ReadLogs );
-           
+            files.AsParallel().WithDegreeOfParallelism(_readThreads).ForAll(ReadLogs);
+
             return _logs;
         }
 
-        private void ReadLogs( FileThinInfo file )
+        private void ReadLogs(FileThinInfo file)
         {
-            using ( var textReader = _fileSystemAccessor.OpenText( file.Path ) )
+            using (var textReader = _fileSystemAccessor.OpenText(file.Path))
             {
-                using ( var contentReader = _contentReaderFactory.Create( textReader ) )
+                using (var contentReader = _contentReaderFactory.Create(textReader))
                 {
                     contentReader.FileReadingProgress += OnFileReadingProgress;
 
-                    foreach ( var log in contentReader.Read( _matchPattern, _terminatorPattern ) )
+                    foreach (var log in contentReader.Read(_matchPattern, _terminatorPattern))
                     {
                         log.Source = file.Path;
-                        _logs.Add( log );
+                        _logs.Add(log);
                     }
                     var args = new FileProgressEventArgs(file, ++_filesRead, _totalFiles, _logs.Count);
                     OnFileReadingCompleted(args);
@@ -71,14 +72,14 @@ namespace ContentFinder
             }
         }
 
-        private void OnFileReadingProgress( object sender, MatchingProgressEventArgs args )
+        private void OnFileReadingProgress(object sender, MatchingProgressEventArgs args)
         {
             FileReadingProgress?.Invoke(this, args);
         }
 
-        protected virtual void OnFileReadingCompleted( FileProgressEventArgs e )
+        protected virtual void OnFileReadingCompleted(FileProgressEventArgs e)
         {
-            FileQueueProgress?.Invoke( this, e );
+            FileQueueProgress?.Invoke(this, e);
         }
     }
 }
